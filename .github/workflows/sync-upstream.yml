@@ -1,0 +1,46 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch upstream
+        run: git remote add upstream https://github.com/13179415360/openwrt-mt6990-lg6851f.git || true
+
+      - name: Merge upstream into the checked-out branch
+        run: |
+          git fetch upstream main
+          git merge --no-edit --no-ff upstream/main || {
+            echo 'Upstream merge has conflicts; leaving the branch for review.'
+            git diff --name-only --diff-filter=U
+            exit 1
+          }
+
+      - name: Create sync pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/sync-upstream
+          delete-branch: true
+          base: main
+          title: 'chore: sync OpenWrt upstream'
+          body: |
+            Automated sync from `13179415360/openwrt-mt6990-lg6851f`.
+            Review conflicts and device-specific changes before merging.
+          labels: upstream,synchronization
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
