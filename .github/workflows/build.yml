@@ -37,6 +37,13 @@ jobs:
             unzip zlib1g-dev file wget curl swig jq xsltproc libelf-dev \
             device-tree-compiler ccache
 
+      # The bundled MediaTek signer contains Python 3.10 bytecode modules.
+      # Ubuntu 24.04's system python is newer and rejects those modules.
+      - name: Set up signer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
       - name: Cache OpenWrt downloads and toolchain
         uses: actions/cache@v4
         with:

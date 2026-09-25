@@ -252,7 +252,13 @@ if [ "$DECISION" = "SIGN" ]; then
 	cp -f "$UNSIGNED_BOOT" "$WORK/in/boot.orig.img"
 
 	PYTHON_BIN="$(command -v python3.10 || command -v python3 || true)"
-	[ -n "$PYTHON_BIN" ] || die "python3.10 or python3 is required"
+	[ -n "$PYTHON_BIN" ] || die "python3.10 is required for the bundled MediaTek signer"
+	"$PYTHON_BIN" -c 'import sys; assert sys.version_info[:2] == (3, 10), sys.version' \
+		|| die "the bundled MediaTek signer requires Python 3.10"
+	# The vendor library is shipped as Python 3.10 bytecode.  Remove only
+	# interpreter-generated caches and keep the vendored .pyc modules intact.
+	find "$OWRT/lg6851f_sign_tool" -type d -name __pycache__ -prune -exec rm -rf {} +
+	unset PYTHONPATH
 	mkdir -p "$WORK/python-wrap"
 	ln -sf "$PYTHON_BIN" "$WORK/python-wrap/python3"
 	export PATH="$WORK/python-wrap:$PATH"
@@ -262,7 +268,7 @@ if [ "$DECISION" = "SIGN" ]; then
 	PYTHONDONTWRITEBYTECODE=True \
 	PRODUCT_OUT="$WORK/in" \
 	BOARD_AVB_ENABLE= \
-	python3 sign_flow.py image mt2737 default \
+	"$PYTHON_BIN" sign_flow.py image mt2737 default \
 	  hsm=1 \
 	  root_key_path="$ROOT_KEY" \
 	  oem_key_path="$IMAGE_KEY" \
@@ -289,7 +295,7 @@ if [ "$DECISION" = "SIGN" ]; then
 	PYTHONDONTWRITEBYTECODE=True \
 	PRODUCT_OUT="$WORK/in-a" \
 	BOARD_AVB_ENABLE= \
-	python3 sign_flow.py image mt2737 default \
+	"$PYTHON_BIN" sign_flow.py image mt2737 default \
 	  hsm=1 \
 	  root_key_path="$ROOT_KEY" \
 	  oem_key_path="$IMAGE_KEY" \
